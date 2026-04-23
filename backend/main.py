@@ -26,6 +26,11 @@ class CodeSubmission(BaseModel):
     code: str
     language: str
 
+class LineExplanation(BaseModel):
+    line_number: int
+    code: str
+    explanation: str
+
 class AnalysisResult(BaseModel):
     quality_score: int
     security_score: int
@@ -34,6 +39,7 @@ class AnalysisResult(BaseModel):
     feedback: str
     visual_complexity: str  # e.g., "O(n^2)"
     refactored_code: str
+    line_by_line_explanation: list[LineExplanation]
 
 @app.post("/api/analyze", response_model=AnalysisResult)
 async def analyze_code(submission: CodeSubmission):
@@ -46,7 +52,11 @@ async def analyze_code(submission: CodeSubmission):
             "testing_score": 60,
             "feedback": "⚠️ **Mock Mode Active:** (Add GEMINI_API_KEY in backend/.env to use real AI)\n\nSecurity Audit Failed: Potential memory leak or unoptimized recursive call detected.\n\nEfficiency: The operation is somewhat brute-forced and could scale poorly with large data inputs.",
             "visual_complexity": "O(n^2)",
-            "refactored_code": 'def add(a, b):\n    """\n    Type-hinted and safely handled.\n    """\n    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):\n        raise ValueError("Invalid parameters")\n    return a + b'
+            "refactored_code": 'def add(a, b):\n    """\n    Type-hinted and safely handled.\n    """\n    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):\n        raise ValueError("Invalid parameters")\n    return a + b',
+            "line_by_line_explanation": [
+                {"line_number": 1, "code": "def add(a, b):", "explanation": "Function definition taking two parameters."},
+                {"line_number": 2, "code": "    return a + b", "explanation": "Returns the sum. Lacks type checking."}
+            ]
         }
         
     prompt = f"""
@@ -61,6 +71,7 @@ async def analyze_code(submission: CodeSubmission):
     - "feedback": (string, detailed breakdown of issues found and suggested fixes)
     - "visual_complexity": (string, the Big-O time complexity, e.g., 'O(n)')
     - "refactored_code": (string, the pristine, refactored 100/100 version of the code)
+    - "line_by_line_explanation": (list of objects, where each object has "line_number" (int), "code" (string, the line of code), and "explanation" (string, short explanation of what that line does and any issues it might have))
     
     Here is the code to analyze:
     ```
@@ -69,7 +80,7 @@ async def analyze_code(submission: CodeSubmission):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash", generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel("gemini-1.5-pro", generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         data = json.loads(response.text)
         return data
