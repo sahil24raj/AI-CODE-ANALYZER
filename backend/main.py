@@ -59,7 +59,7 @@ async def analyze_code(submission: CodeSubmission):
         }
         
     prompt = f"""
-    You are an expert Senior Software Engineer and Security Auditor. Process the following {submission.language} code.
+    You are an expert Computer Science Professor and Code Reviewer. Process the following {submission.language} code.
     
     You must output a strictly valid JSON object without any Markdown formatting (no ```json). 
     The JSON object must have exactly these keys and data types:
@@ -70,9 +70,14 @@ async def analyze_code(submission: CodeSubmission):
     - "feedback": (string, detailed breakdown of issues found and suggested fixes)
     - "visual_complexity": (string, the Big-O time complexity, e.g., 'O(n)')
     - "refactored_code": (string, the pristine, refactored 100/100 version of the code)
-    - "line_by_line_explanation": (list of objects, where each object has "line_number" (int), "code" (string, the line of code), and "explanation" (string, short explanation of what that line does and any issues it might have))
+    - "line_by_line_explanation": (list of objects, where each object has "line_number" (int), "code" (string, EXACTLY the line of code from the input, do not modify it), and "explanation" (string, a very clear, engaging, and highly visual explanation of what this specific line does. Explain it like a presentation for a beginner coding student)).
     
-    Here is the code to analyze:
+    CRITICAL INSTRUCTION FOR `line_by_line_explanation`: 
+    1. You MUST use the EXACT code provided by the user below. Do NOT invent, summarize, or skip lines of code.
+    2. Explain EVERY significant line of the user's submitted code sequentially.
+    3. Make explanations beginner-friendly, as if they are slides in an animated presentation for students.
+    
+    Here is the exact code to analyze:
     ```
     {submission.code}
     ```
