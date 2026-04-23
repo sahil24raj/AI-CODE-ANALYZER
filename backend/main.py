@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
+from groq import Groq
 import os
 import json
 from dotenv import load_dotenv
@@ -18,9 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GENAI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GENAI_API_KEY:
-    genai.configure(api_key=GENAI_API_KEY)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 class CodeSubmission(BaseModel):
     code: str
@@ -43,14 +42,14 @@ class AnalysisResult(BaseModel):
 
 @app.post("/api/analyze", response_model=AnalysisResult)
 async def analyze_code(submission: CodeSubmission):
-    if not GENAI_API_KEY:
+    if not GROQ_API_KEY:
         # Fallback to Mock Response if API key is not configured yet
         return {
             "quality_score": 85,
             "security_score": 40,
             "efficiency_score": 75,
             "testing_score": 60,
-            "feedback": "⚠️ **Mock Mode Active:** (Add GEMINI_API_KEY in backend/.env to use real AI)\n\nSecurity Audit Failed: Potential memory leak or unoptimized recursive call detected.\n\nEfficiency: The operation is somewhat brute-forced and could scale poorly with large data inputs.",
+            "feedback": "⚠️ **Mock Mode Active:** (Add GROQ_API_KEY in backend/.env to use real AI)\n\nSecurity Audit Failed: Potential memory leak or unoptimized recursive call detected.\n\nEfficiency: The operation is somewhat brute-forced and could scale poorly with large data inputs.",
             "visual_complexity": "O(n^2)",
             "refactored_code": 'def add(a, b):\n    """\n    Type-hinted and safely handled.\n    """\n    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):\n        raise ValueError("Invalid parameters")\n    return a + b',
             "line_by_line_explanation": [
@@ -80,9 +79,16 @@ async def analyze_code(submission: CodeSubmission):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash", generation_config={"response_mime_type": "application/json"})
-        response = model.generate_content(prompt)
-        data = json.loads(response.text)
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        response_content = completion.choices[0].message.content
+        data = json.loads(response_content)
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
