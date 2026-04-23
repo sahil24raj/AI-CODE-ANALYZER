@@ -80,7 +80,7 @@ async def analyze_code(submission: CodeSubmission):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-1.5-pro", generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel("gemini-2.0-flash", generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         data = json.loads(response.text)
         return data
