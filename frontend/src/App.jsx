@@ -13,8 +13,12 @@ function App() {
     setAnalyzing(true);
     setError(null);
     try {
-      // Point to local FastAPI server
-      const response = await axios.post('http://127.0.0.1:8000/api/analyze', {
+      // Use local backend URL in development, and the Vercel deployed backend route in production
+      const endpoint = import.meta.env.DEV 
+        ? 'http://127.0.0.1:8000/api/analyze' 
+        : '/_/backend/api/analyze';
+
+      const response = await axios.post(endpoint, {
         code,
         language
       });
