@@ -25,7 +25,8 @@ function App() {
       setResults(response.data);
     } catch (err) {
       console.error(err);
-      setError('An error occurred during analysis.');
+      const errorMsg = err.response?.data?.detail || err.message || 'An error occurred during analysis.';
+      setError(`Error: ${errorMsg}`);
     } finally {
       setAnalyzing(false);
     }

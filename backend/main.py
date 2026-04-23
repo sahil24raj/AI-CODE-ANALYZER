@@ -69,19 +69,9 @@ async def analyze_code(submission: CodeSubmission):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash", generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
-        # Parse output as JSON (Assuming it strictly followed the format)
-        raw_text = response.text.strip()
-        # Clean up any potential markdown formatting
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        if raw_text.startswith("```"):
-            raw_text = raw_text[3:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-            
-        data = json.loads(raw_text.strip())
+        data = json.loads(response.text)
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
